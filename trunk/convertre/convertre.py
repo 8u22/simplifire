@@ -7,6 +7,11 @@
 # Description:
 #   collection of converter functions for flexible use.
 #
+# TODO Implement following features:
+# - XOR multikey guess (based on frequent substings / 0x20 sequences)
+### http://crucialsecurityblog.harris.com/2011/07/06/decoding-data-exfiltration-%E2%80%93-reversing-xor-encryption/
+# - batch application of several conversion and hashing options
+#
 ################################################################################
 #
 #  This file is part of simpliFiRE
@@ -34,11 +39,6 @@ VERSION = 1.0
 PRINT_RANGE = 0x20
 OUTPUT_DEST = None
 
-
-# TODO Implement following features:
-# XOR multikey guess (based on frequent substings / 0x20 sequences)
-### http://crucialsecurityblog.harris.com/2011/07/06/decoding-data-exfiltration-%E2%80%93-reversing-xor-encryption/
-# batch application of several hashing / checking algorithms
 
 ################################################################################
 # implementation of manipulation options
@@ -242,9 +242,17 @@ def decode_base16(in_str):
     return out_str
     
 
-# Infalte / Deflate
+# Inflate / Deflate
 # TODO validate correctness
 # source: http://stackoverflow.com/questions/2424945/are-zlib-compress-on-python-and-deflater-deflate-on-java-android-compatible
+def inflate(in_str):
+    zobj = zlib.compressobj(6, zlib.DEFLATED, zlib.MAX_WBITS, \
+        zlib.DEF_MEM_LEVEL, 0)
+    out_str = zobj.compress(in_str)
+    out_str += zobj.flush()
+    store_result("inflate.bin", out_str)  
+    return out_str
+
 def deflate(in_str):
     zobj = zlib.compressobj(6, zlib.DEFLATED, -zlib.MAX_WBITS, \
         zlib.DEF_MEM_LEVEL, 0)
@@ -253,13 +261,6 @@ def deflate(in_str):
     store_result("deflate.bin", out_str)  
     return out_str
     
-def inflate(in_str):
-    zobj = zlib.compressobj(6, zlib.DEFLATED, zlib.MAX_WBITS, \
-        zlib.DEF_MEM_LEVEL, 0)
-    out_str = zobj.compress(in_str)
-    out_str += zobj.flush()
-    store_result("inflate.bin", out_str)  
-    return out_str
     
 # standard compression
 def compress(in_str):
@@ -297,7 +298,7 @@ def find_all(in_str, target, offset=0):
     return indices
 
 # Search for a target string in all possible one-byte XOR, ROL and ROT 
-# manipulations of a input string credits for the idea go to Didier Stevens. 
+# manipulations of an input string credits for the idea go to Didier Stevens. 
 # source: http://blog.didierstevens.com/programs/xorsearch/
 def multi_find(in_str, target):
     """
